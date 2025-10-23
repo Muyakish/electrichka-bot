@@ -1,4 +1,6 @@
 python-telegram-bot==22.5
-googletrans==3.1.0a0
+googletrans==4.0.0-rc1-fixed
 requests
 python-dotenv
+httpx==0.28.1
+
