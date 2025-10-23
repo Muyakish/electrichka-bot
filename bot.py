@@ -3,7 +3,7 @@ import random
 import requests
 import asyncio
 from dotenv import load_dotenv
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 from telegram import Bot
 from telegram.constants import ParseMode
 
@@ -13,7 +13,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 bot = Bot(token=BOT_TOKEN)
-translator = Translator()
 
 # --- Получаем цитату ---
 async def get_quote():
@@ -34,8 +33,8 @@ async def get_quote():
 # --- Перевод цитаты ---
 async def translate_quote(quote_text):
     try:
-        result = translator.translate(quote_text, src="en", dest="ru")
-        return result.text
+        result = GoogleTranslator(source='en', target='ru').translate(quote_text)
+        return result
     except Exception as e:
         print("Ошибка перевода:", e)
         return None
@@ -87,7 +86,7 @@ async def scheduler():
     while True:
         await publish_post()
         print("🕒 Следующий пост через 3 часа...")
-        await asyncio.sleep(3 * 60 * 60)  # 3 часа в секундах
+        await asyncio.sleep(3 * 60 * 60)  # 3 часа
 
 
 async def main():
