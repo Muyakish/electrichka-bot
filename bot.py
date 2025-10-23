@@ -6,14 +6,12 @@ import requests
 from telegram import Bot
 from dotenv import load_dotenv
 
-# Загружаем переменные из .env (локально) и Environment (Render)
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 bot = Bot(token=BOT_TOKEN)
 
-# Список 100 автоподписей
 SIGNATURES = [
     "🚂 Электричка — философия в движении",
     "⚡ Мысли на рельсах",
@@ -116,7 +114,6 @@ SIGNATURES = [
     "✨ Электричка едет. Мысли продолжаются."
 ]
 
-# Функция получения случайной цитаты
 def get_quote():
     try:
         response = requests.get("https://zenquotes.io/api/random")
@@ -127,7 +124,6 @@ def get_quote():
     except Exception:
         return "⚠️ Ошибка загрузки цитаты. Попробуем позже."
 
-# Пинг Render (keep-alive)
 def keep_alive():
     url = os.getenv("RENDER_EXTERNAL_URL")
     if not url:
@@ -137,9 +133,8 @@ def keep_alive():
             requests.get(url)
         except Exception:
             pass
-        time.sleep(600)  # каждые 10 минут
+        time.sleep(600)
 
-# Автопостинг каждые 3 часа
 def autopost():
     while True:
         quote = get_quote()
@@ -147,14 +142,12 @@ def autopost():
             bot.send_message(chat_id=CHANNEL_ID, text=quote)
         except Exception as e:
             print("Ошибка отправки:", e)
-        time.sleep(3 * 60 * 60)  # каждые 3 часа
+        time.sleep(3 * 60 * 60)
 
-# Запускаем оба потока
 threading.Thread(target=keep_alive, daemon=True).start()
 threading.Thread(target=autopost, daemon=True).start()
 
 print("🚆 Электричка запущена и едет по расписанию!")
 
-# Чтобы процесс не завершался
 while True:
     time.sleep(60)
