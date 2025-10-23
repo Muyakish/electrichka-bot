@@ -1,10 +1,11 @@
 import os
-import threading
-import time
+import asyncio
 import random
+import time
 import requests
 from telegram import Bot
 from dotenv import load_dotenv
+import threading
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -116,13 +117,13 @@ SIGNATURES = [
 
 def get_quote():
     try:
-        response = requests.get("https://zenquotes.io/api/random")
-        data = response.json()[0]
+        r = requests.get("https://zenquotes.io/api/random", timeout=15)
+        data = r.json()[0]
         quote = f"«{data['q']}» — {data['a']}"
-        signature = random.choice(SIGNATURES)
-        return f"{quote}\n\n{signature}"
-    except Exception:
-        return "⚠️ Ошибка загрузки цитаты. Попробуем позже."
+        return f"{quote}\n\n{random.choice(SIGNATURES)}"
+    except Exception as e:
+        print("Ошибка цитаты:", e)
+        return "⚠️ Ошибка загрузки цитаты."
 
 def keep_alive():
     url = os.getenv("RENDER_EXTERNAL_URL")
@@ -130,24 +131,22 @@ def keep_alive():
         return
     while True:
         try:
-            requests.get(url)
+            requests.get(url, timeout=10)
         except Exception:
             pass
         time.sleep(600)
 
-def autopost():
+async def autopost():
     while True:
-        quote = get_quote()
+        text = get_quote()
         try:
-            bot.send_message(chat_id=CHANNEL_ID, text=quote)
+            await bot.send_message(chat_id=CHANNEL_ID, text=text)
+            print("✅ Пост опубликован.")
         except Exception as e:
-            print("Ошибка отправки:", e)
-        time.sleep(3 * 60 * 60)
+            print("Ошибка публикации:", e)
+        await asyncio.sleep(3 * 60 * 60)  # 3 часа
 
-threading.Thread(target=keep_alive, daemon=True).start()
-threading.Thread(target=autopost, daemon=True).start()
-
-print("🚆 Электричка запущена и едет по расписанию!")
-
-while True:
-    time.sleep(60)
+if __name__ == "__main__":
+    threading.Thread(target=keep_alive, daemon=True).start()
+    print("🚆 Электричка запущена и едет по расписанию!")
+    asyncio.run(autopost())
