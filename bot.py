@@ -4,7 +4,6 @@ import time
 import requests
 import telebot
 from dotenv import load_dotenv
-from googletrans import Translator
 
 load_dotenv()
 
@@ -14,7 +13,18 @@ ADMIN_ID = int(os.getenv("ELECTRICHKA_ADMIN_ID", "0"))
 CAPTIONS_FILE = os.getenv("ELECTRICHKA_CAPTIONS_FILE", "captions3.txt")
 
 bot = telebot.TeleBot(BOT_TOKEN)
-translator = Translator()
+
+def translate_to_russian(text):
+    """Перевод через Google Translate API без googletrans"""
+    try:
+        url = "https://translate.googleapis.com/translate_a/single"
+        params = {"client": "gtx", "sl": "en", "tl": "ru", "dt": "t", "q": text}
+        r = requests.get(url, params=params, timeout=10)
+        translated = r.json()[0][0][0]
+        return translated
+    except Exception as e:
+        print("⚠️ Ошибка перевода:", e)
+        return text
 
 def get_quote():
     """Получаем случайную цитату"""
@@ -22,7 +32,7 @@ def get_quote():
         res = requests.get("https://zenquotes.io/api/random", timeout=10)
         data = res.json()[0]
         original = f"💭 {data['q']}\n— {data['a']}"
-        translated = translator.translate(data["q"], src="en", dest="ru").text
+        translated = translate_to_russian(data["q"])
         return f"{original}\n\n💬 {translated}"
     except Exception as e:
         print("⚠️ Ошибка получения цитаты:", e)
@@ -47,7 +57,6 @@ def post_to_channel():
     bot.send_photo(CHANNEL_ID, image_url, caption=message)
     print("✅ Пост опубликован")
 
-# Основной цикл
 while True:
     try:
         post_to_channel()
@@ -59,3 +68,4 @@ while True:
         except Exception:
             pass
         time.sleep(60)
+
