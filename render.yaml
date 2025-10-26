@@ -1,6 +1,7 @@
 services:
-  - type: worker
-    name: electrichka-bot
+  - type: web
+    name: electrichka3
     env: python
+    plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python bot.py"
