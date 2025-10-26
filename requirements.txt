@@ -1,6 +1,4 @@
-python-telegram-bot==22.5
-deep-translator==1.11.4
-python-dotenv
-requests
-
-
+pyTelegramBotAPI==4.22.1
+python-dotenv==1.0.1
+requests==2.32.3
+googletrans==4.0.0-rc1
