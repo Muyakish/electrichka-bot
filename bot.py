@@ -1,18 +1,21 @@
 import os
 import time
 import requests
-from threading import Thread
-from flask import Flask
-from io import BytesIO
-from googletrans import Translator
 import logging
 import random
-import traceback
+from io import BytesIO
+from threading import Thread
+from flask import Flask
 from PIL import Image
+from googletrans import Translator
+import schedule
 
 # ------------------- Настройка логов -------------------
-logging.basicConfig(filename='bot.log', level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    filename='bot.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # ------------------- Flask сервер -------------------
 app = Flask(__name__)
@@ -28,16 +31,17 @@ def run_flask():
 Thread(target=run_flask, daemon=True).start()
 
 # ------------------- Настройки бота -------------------
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "ваш_токен_бота")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "ваш_чат_id")
-POST_INTERVAL = 3 * 60 * 60  # каждые 3 часа
+TELEGRAM_BOT_TOKEN = os.getenv("ELECTRICHKA_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("ELECTRICHKA_CHANNEL_ID")
+POST_INTERVAL_HOURS = 3
 FIRMA_SIGNATURE = "— Ваши мысли с Электричкой 🚆"
 
 translator = Translator()
 HASHTAGS = ["#философия", "#юмор", "#цитата", "#мотивация", "#мысли"]
 CATEGORIES = ["жизнь", "счастье", "мотивация", "юмор", "философия"]
 
-LOGO_PATH = "logo.png"  # поместить файл логотипа рядом с ботом
+LOGO_PATH = "logo.png"  # Логотип рядом с bot.py
+CAPTIONS_FILE = os.getenv("ELECTRICHKA_CAPTIONS_FILE", "captions3.txt")
 
 # ------------------- Функции -------------------
 def get_quote():
@@ -70,14 +74,13 @@ def get_image():
 
 def overlay_logo(image):
     try:
+        if not os.path.exists(LOGO_PATH):
+            return image
         logo = Image.open(LOGO_PATH).convert("RGBA")
-        # масштабирование логотипа пропорционально
         base_width = int(image.width * 0.15)
-        w_percent = (base_width / float(logo.width))
+        w_percent = base_width / float(logo.width)
         h_size = int((float(logo.height) * float(w_percent)))
         logo = logo.resize((base_width, h_size), Image.ANTIALIAS)
-
-        # позиция в правом нижнем углу
         position = (image.width - logo.width - 10, image.height - logo.height - 10)
         image.paste(logo, position, logo)
         output = BytesIO()
@@ -115,22 +118,26 @@ def send_post(quote, author, image_bytes):
         )
         logging.info("Пост отправлен успешно")
     except Exception as e:
-        logging.error(f"Ошибка отправки: {traceback.format_exc()}")
+        logging.error(f"Ошибка отправки: {e}")
 
-def post_cycle():
+def job_post():
+    try:
+        quote, author = get_quote()
+        quote_ru = translate_quote(quote)
+        image_bytes = get_image()
+        send_post(f"{quote} ({quote_ru})", author, image_bytes)
+    except Exception as e:
+        logging.error(f"Ошибка в задаче постинга: {e}")
+
+# ------------------- Планировщик -------------------
+schedule.every(POST_INTERVAL_HOURS).hours.do(job_post)
+
+def run_scheduler():
     while True:
-        try:
-            quote, author = get_quote()
-            quote_ru = translate_quote(quote)
-            image_bytes = get_image()
-            send_post(f"{quote} ({quote_ru})", author, image_bytes)
-            time.sleep(POST_INTERVAL)
-        except Exception as e:
-            logging.error(f"Ошибка в цикле постинга: {traceback.format_exc()}")
-            time.sleep(60)
+        schedule.run_pending()
+        time.sleep(30)
 
-# ------------------- Запуск цикла -------------------
-Thread(target=post_cycle, daemon=True).start()
+Thread(target=run_scheduler, daemon=True).start()
 
 # ------------------- Главный цикл -------------------
 while True:
