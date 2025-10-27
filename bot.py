@@ -6,8 +6,8 @@ import random
 from io import BytesIO
 from threading import Thread
 from flask import Flask
-from PIL import Image, ImageDraw, ImageFont
-from googletrans import Translator
+from PIL import Image
+from deep_translator import GoogleTranslator
 import schedule
 
 # ------------------- Настройка логов -------------------
@@ -41,7 +41,6 @@ if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
 POST_INTERVAL_HOURS = int(os.getenv("POST_INTERVAL_HOURS", "3"))
 FIRMA_SIGNATURE = "— Ваши мысли с Электричкой 🚆"
 
-translator = Translator()
 HASHTAGS = ["#философия", "#юмор", "#цитата", "#мотивация", "#мысли"]
 CATEGORIES = ["жизнь", "счастье", "мотивация", "юмор", "философия"]
 
@@ -63,7 +62,7 @@ def get_quote():
 
 def translate_quote(text):
     try:
-        return translator.translate(text, dest='ru').text
+        return GoogleTranslator(source='en', target='ru').translate(text)
     except Exception as e:
         logging.error(f"Ошибка перевода: {e}")
         return text
@@ -90,7 +89,6 @@ def overlay_logo(image):
         base_width = int(image.width * 0.15)
         w_percent = base_width / float(logo.width)
         h_size = int(float(logo.height) * w_percent)
-        # Используем LANCZOS вместо устаревшего ANTIALIAS
         logo = logo.resize((base_width, h_size), Image.LANCZOS)
         position = (image.width - logo.width - 10, image.height - logo.height - 10)
         image.paste(logo, position, logo)
@@ -148,7 +146,6 @@ def job_post():
         quote, author = get_quote()
         quote_ru = translate_quote(quote)
         image_bytes = get_image()
-        # Отправляем оригинал + перевод в скобках
         full_quote = f"{quote} ({quote_ru})"
         send_post(full_quote, author, image_bytes)
     except Exception as e:
