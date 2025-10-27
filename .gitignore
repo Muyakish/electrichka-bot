@@ -1,4 +1,6 @@
 .env
+bot.log
 __pycache__/
 *.pyc
-bot.log
+*.pyo
+.env.local
