@@ -38,9 +38,9 @@ FIRMA_SIGNATURE = "— Ваши мысли с Электричкой 🚆"
 
 translator = Translator()
 HASHTAGS = ["#философия", "#юмор", "#цитата", "#мотивация", "#мысли"]
-CATEGORIES = ["жизнь", "счастье", "мотивация", "юмор", "философия"]
+CATEGORIES = ["жизнь", "счастье", "мотивация", "#юмор", "#философия"]
 
-LOGO_PATH = "logo.png"  # Логотип рядом с bot.py
+LOGO_PATH = "logo.png"  # Логотип рядом с bot.py (необязательно)
 CAPTIONS_FILE = os.getenv("ELECTRICHKA_CAPTIONS_FILE", "captions3.txt")
 
 # ------------------- Функции -------------------
@@ -73,9 +73,16 @@ def get_image():
         return None
 
 def overlay_logo(image):
+    """
+    Возвращает изображение без наложения логотипа, если логотип отсутствует.
+    """
     try:
         if not os.path.exists(LOGO_PATH):
-            return image
+            output = BytesIO()
+            image.save(output, format="PNG")
+            output.seek(0)
+            return output
+        # Если логотип есть — выполняем наложение
         logo = Image.open(LOGO_PATH).convert("RGBA")
         base_width = int(image.width * 0.15)
         w_percent = base_width / float(logo.width)
@@ -89,7 +96,10 @@ def overlay_logo(image):
         return output
     except Exception as e:
         logging.error(f"Ошибка наложения логотипа: {e}")
-        return None
+        output = BytesIO()
+        image.save(output, format="PNG")
+        output.seek(0)
+        return output
 
 def check_telegram():
     try:
