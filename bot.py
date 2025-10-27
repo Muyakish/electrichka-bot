@@ -152,6 +152,7 @@ def job_post():
         logging.error(f"Ошибка в задаче постинга: {e}")
 
 # ------------------- Планировщик -------------------
+POST_INTERVAL_HOURS = int(os.getenv("POST_INTERVAL_HOURS", "3"))
 schedule.every(POST_INTERVAL_HOURS).hours.do(job_post)
 
 def run_scheduler():
@@ -165,5 +166,6 @@ Thread(target=run_scheduler, daemon=True).start()
 logging.info("Бот запущен. Ожидание задач...")
 while True:
     time.sleep(60)
+
 
 
