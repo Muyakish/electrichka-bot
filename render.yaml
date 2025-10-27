@@ -1,9 +1,13 @@
 services:
   - type: web
-    name: electrichka3
+    name: electrichka-bot
     env: python
     plan: free
-    buildCommand: "python3.11 -m pip install --upgrade pip && python3.11 -m pip install -r requirements.txt"
-    startCommand: "python3.11 bot.py"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
     envVars:
-      PYTHON_VERSION: 3.11.9
+      PYTHON_VERSION: 3.11
+      ELECTRICHKA_BOT_TOKEN: 8395487582:AAHvdwyU1YMpdvPHB8x3M272C8o58QonHxo
+      ELECTRICHKA_CHANNEL_ID: "@etotebenemelo4pokarmanamtirit"
+      ELECTRICHKA_ADMIN_ID: 1032862496
+      ELECTRICHKA_CAPTIONS_FILE: captions3.txt
