@@ -136,7 +136,7 @@ def telegram_webhook():
     chat_id = str(message["chat"]["id"])
     text = message.get("text", "").strip()
 
-    if not ADMIN_CHAT_ID or chat_id != ADMIN_CHAT_ID:
+   if not ADMIN_CHAT_ID or str(chat_id) != str(ADMIN_CHAT_ID):
         print(f"[DEBUG] Команда от неадмина: {chat_id}", flush=True)
         return jsonify({"ok": True})
 
@@ -196,3 +196,4 @@ job_post()
 print("[🟢] Бот готов к работе.", flush=True)
 while True:
     time.sleep(60)
+
