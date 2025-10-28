@@ -9,7 +9,6 @@ from PIL import Image
 from deep_translator import GoogleTranslator
 import schedule
 
-# ------------------- Настройки -------------------
 TELEGRAM_BOT_TOKEN = os.getenv("ELECTRICHKA_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("ELECTRICHKA_CHANNEL_ID")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
@@ -19,23 +18,19 @@ if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("[CRITICAL] ❌ Отсутствуют переменные: ELECTRICHKA_BOT_TOKEN или ELECTRICHKA_CHANNEL_ID", flush=True)
     exit(1)
 
-# Загрузка подписей из captions3.txt
 def load_captions():
     if os.path.exists("captions3.txt"):
         with open("captions3.txt", "r", encoding="utf-8") as f:
             lines = [line.strip() for line in f if line.strip()]
             if lines:
                 return lines
-    # fallback
     return ["🚆 Электричка уже тронулась — прыгай в поток идей!"]
 
 FIRMA_SIGNATURES = load_captions()
-
 HASHTAGS = ["#философия", "#юмор", "#цитата", "#мотивация", "#мысли"]
 CATEGORIES = ["жизнь", "счастье", "мотивация", "юмор", "философия"]
 LOGO_PATH = "logo.png"
 
-# ------------------- Функции -------------------
 def get_quote():
     try:
         res = requests.get("https://zenquotes.io/api/random", timeout=10)
@@ -119,7 +114,6 @@ def job_post():
         return
     send_post(f"{quote} ({quote_ru})", author, image)
 
-# ------------------- Flask -------------------
 app = Flask(__name__)
 
 @app.route('/')
@@ -136,7 +130,7 @@ def telegram_webhook():
     chat_id = str(message["chat"]["id"])
     text = message.get("text", "").strip()
 
-   if not ADMIN_CHAT_ID or str(chat_id) != str(ADMIN_CHAT_ID):
+    if not ADMIN_CHAT_ID or str(chat_id) != str(ADMIN_CHAT_ID):
         print(f"[DEBUG] Команда от неадмина: {chat_id}", flush=True)
         return jsonify({"ok": True})
 
@@ -164,7 +158,6 @@ def run_flask():
 
 Thread(target=run_flask, daemon=True).start()
 
-# ------------------- Webhook setup -------------------
 def ensure_webhook():
     if not WEBHOOK_URL:
         print("[WARN] WEBHOOK_URL не задан — команды недоступны", flush=True)
@@ -178,7 +171,6 @@ def ensure_webhook():
 
 ensure_webhook()
 
-# ------------------- Scheduler -------------------
 schedule.every(3).hours.do(job_post)
 
 def run_scheduler():
@@ -189,11 +181,9 @@ def run_scheduler():
 
 Thread(target=run_scheduler, daemon=True).start()
 
-# ------------------- Первый пост -------------------
 print("[🚀] Отправка первого поста...", flush=True)
 job_post()
 
 print("[🟢] Бот готов к работе.", flush=True)
 while True:
     time.sleep(60)
-
