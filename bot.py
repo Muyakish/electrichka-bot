@@ -12,10 +12,10 @@ import schedule
 
 # ------------------- Настройка логов -------------------
 logging.basicConfig(
-    filename='bot.log',
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+# Логи также будут в stdout → видны в Render Logs
 
 # ------------------- Flask сервер -------------------
 app = Flask(__name__)
@@ -35,7 +35,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("ELECTRICHKA_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("ELECTRICHKA_CHANNEL_ID")
 
 if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-    logging.error("Отсутствуют обязательные переменные окружения: ELECTRICHKA_BOT_TOKEN или ELECTRICHKA_CHANNEL_ID")
+    print("[CRITICAL] Отсутствуют переменные: ELECTRICHKA_BOT_TOKEN или ELECTRICHKA_CHANNEL_ID", flush=True)
     exit(1)
 
 POST_INTERVAL_HOURS = int(os.getenv("POST_INTERVAL_HOURS", "3"))
@@ -45,7 +45,6 @@ HASHTAGS = ["#философия", "#юмор", "#цитата", "#мотива�
 CATEGORIES = ["жизнь", "счастье", "мотивация", "юмор", "философия"]
 
 LOGO_PATH = "logo.png"
-CAPTIONS_FILE = os.getenv("ELECTRICHKA_CAPTIONS_FILE", "captions3.txt")
 
 # ------------------- Функции -------------------
 def get_quote():
@@ -57,14 +56,14 @@ def get_quote():
         author = data.get('a', '')
         return quote, author
     except Exception as e:
-        logging.error(f"Ошибка получения цитаты: {e}")
+        print(f"[ERROR] Ошибка получения цитаты: {e}", flush=True)
         return "Цитата недоступна", ""
 
 def translate_quote(text):
     try:
         return GoogleTranslator(source='en', target='ru').translate(text)
     except Exception as e:
-        logging.error(f"Ошибка перевода: {e}")
+        print(f"[ERROR] Ошибка перевода: {e}", flush=True)
         return text
 
 def get_image():
@@ -74,7 +73,7 @@ def get_image():
         image = Image.open(BytesIO(img_bytes)).convert("RGBA")
         return overlay_logo(image)
     except Exception as e:
-        logging.error(f"Ошибка получения изображения: {e}")
+        print(f"[ERROR] Ошибка получения изображения: {e}", flush=True)
         return None
 
 def overlay_logo(image):
@@ -98,7 +97,7 @@ def overlay_logo(image):
         output.seek(0)
         return output
     except Exception as e:
-        logging.error(f"Ошибка наложения логотипа: {e}")
+        print(f"[ERROR] Ошибка наложения логотипа: {e}", flush=True)
         output = BytesIO()
         image.save(output, format="PNG")
         output.seek(0)
@@ -110,12 +109,12 @@ def check_telegram():
         res = requests.get(url, timeout=10)
         return res.status_code == 200
     except Exception as e:
-        logging.error(f"Ошибка проверки Telegram API: {e}")
+        print(f"[ERROR] Ошибка проверки Telegram API: {e}", flush=True)
         return False
 
 def send_post(quote, author, image_bytes):
     if image_bytes is None:
-        logging.warning("Нет изображения, пост не отправлен")
+        print("[WARN] Нет изображения, пост не отправлен", flush=True)
         return
 
     hashtags = " ".join(random.sample(HASHTAGS, k=2))
@@ -123,7 +122,7 @@ def send_post(quote, author, image_bytes):
     text = f"[{category.upper()}] {quote}\n— {author}\n{FIRMA_SIGNATURE}\n{hashtags}"
 
     if not check_telegram():
-        logging.error("Telegram API недоступен, пост не отправлен")
+        print("[ERROR] Telegram API недоступен, пост не отправлен", flush=True)
         return
 
     try:
@@ -135,21 +134,22 @@ def send_post(quote, author, image_bytes):
             timeout=15
         )
         if response.status_code == 200:
-            logging.info("Пост отправлен успешно")
+            print("[INFO] Пост отправлен успешно", flush=True)
         else:
-            logging.error(f"Ошибка отправки: {response.status_code} {response.text}")
+            print(f"[ERROR] Ошибка отправки: {response.status_code} {response.text}", flush=True)
     except Exception as e:
-        logging.error(f"Ошибка отправки: {e}")
+        print(f"[ERROR] Исключение при отправке: {e}", flush=True)
 
 def job_post():
     try:
+        print("[INFO] Запуск задачи постинга...", flush=True)
         quote, author = get_quote()
         quote_ru = translate_quote(quote)
         image_bytes = get_image()
         full_quote = f"{quote} ({quote_ru})"
         send_post(full_quote, author, image_bytes)
     except Exception as e:
-        logging.error(f"Ошибка в задаче постинга: {e}")
+        print(f"[CRITICAL] Необработанная ошибка в job_post: {e}", flush=True)
 
 # ------------------- Планировщик -------------------
 schedule.every(POST_INTERVAL_HOURS).hours.do(job_post)
@@ -161,8 +161,12 @@ def run_scheduler():
 
 Thread(target=run_scheduler, daemon=True).start()
 
+# ------------------- Первый пост сразу при запуске -------------------
+print("[INFO] Отправка первого поста немедленно...", flush=True)
+job_post()
+
+print("[INFO] Бот запущен. Ожидание следующих задач...", flush=True)
+
 # ------------------- Главный цикл -------------------
-logging.info("Бот запущен. Ожидание задач...")
 while True:
     time.sleep(60)
-
