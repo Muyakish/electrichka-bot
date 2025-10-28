@@ -137,6 +137,7 @@ def telegram_webhook():
     text = message.get("text", "").strip()
 
     if not ADMIN_CHAT_ID or chat_id != ADMIN_CHAT_ID:
+        print(f"[DEBUG] Команда от неадмина: {chat_id}", flush=True)
         return jsonify({"ok": True})
 
     def send_reply(text):
@@ -149,6 +150,7 @@ def telegram_webhook():
             print(f"[ERROR] Не удалось отправить ответ: {e}", flush=True)
 
     if text == "/post_now":
+        print(f"[INFO] Получена команда /post_now от {chat_id}", flush=True)
         Thread(target=job_post).start()
         send_reply("✅ Пост запущен!")
     elif text == "/status":
